@@ -6,16 +6,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import co.develhope.meteoapp.data.Data
 import co.develhope.meteoapp.data.domain.DailyDataLocal
 import co.develhope.meteoapp.data.domain.HourlyForecast
 import co.develhope.meteoapp.databinding.FragmentTomorrowScreenBinding
-import co.develhope.meteoapp.network.WeatherRepo
 import co.develhope.meteoapp.ui.search.adapter.DataSearches
 import co.develhope.meteoapp.ui.today.adapter.HourlyForecastItems
 import co.develhope.meteoapp.ui.tomorrow.adapter.TomorrowAdapter
-import kotlinx.coroutines.launch
+import co.develhope.meteoapp.ui.tomorrow.viewModel.TomorrowViewModel
 import org.threeten.bp.OffsetDateTime
 import org.threeten.bp.format.DateTimeFormatter
 
@@ -23,8 +22,7 @@ import org.threeten.bp.format.DateTimeFormatter
 class TomorrowScreenFragment : Fragment() {
     private var _binding: FragmentTomorrowScreenBinding? = null
     private val binding get() = _binding!!
-    private val repo = WeatherRepo()
-//    private val dailyViewModel: DailyViewModel by viewModels()
+    private val tomorrowViewModel: TomorrowViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,6 +30,7 @@ class TomorrowScreenFragment : Fragment() {
     ): View? {
         _binding = FragmentTomorrowScreenBinding.inflate(inflater, container, false)
         return binding.root
+
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -57,10 +56,12 @@ class TomorrowScreenFragment : Fragment() {
         val selectedDate = Data.getSavedDate()!!.format(DateTimeFormatter.ofPattern("YYYY-MM-d"))
         Log.d("DATE", selectedDate!!)
 
-        getDaily(latitude!!, longitude!!, selectedDate, selectedDate)
+        tomorrowViewModel.getDaily(
+            latitude!!, longitude!!, selectedDate, selectedDate
+        )
 
         setupAdapter()
-//        setupObserver()
+        setupObserver()
 
     }
 
@@ -68,40 +69,28 @@ class TomorrowScreenFragment : Fragment() {
         binding.tomorrowRecyclerview.adapter = TomorrowAdapter(listOf())
     }
 
-//    private fun setupObserver() {
-////        dailyViewModel.isLoading.observe(viewLifecycleOwner){
-////            binding.tomorrowProgress.isVisible = it
-////        }
-//
-////        dailyViewModel.result.observe(viewLifecycleOwner){
-////            (binding.tomorrowRecyclerview.adapter as TomorrowAdapter).setNewList(it.toHourlyForecastItems())
-////        }
-//    }
+    private fun setupObserver() {
 
-    private fun getDaily(
-        lat: Double,
-        lon: Double,
-        startDate: String,
-        endDate: String
-    ) {
-        binding.tomorrowProgress.visibility = View.VISIBLE
-
-        lifecycleScope.launch {
-            val response = repo.getWeather(lat, lon, startDate, endDate)
-            if (response != null) {
-                binding.tomorrowProgress.visibility = View.GONE
-                (binding.tomorrowRecyclerview.adapter as TomorrowAdapter).setNewList(response.toHourlyForecastItems())
-                Log.i("NETWORK DATA", "$response")
-            } else {
-                Log.e("NETWORK ERROR", "Couldn't achieve network call. (Today Screen)")
-            }
+        tomorrowViewModel.result.observe(viewLifecycleOwner) {
+            (binding.tomorrowRecyclerview.adapter as TomorrowAdapter).setNewList(it.toHourlyForecastItems())
         }
     }
+//    private fun setupObserver() {
+//        dailyViewModel.isLoading.observe(viewLifecycleOwner){
+//            binding.tomorrowProgress.isVisible = it
+//        }
+
+
 
     private fun DailyDataLocal?.toHourlyForecastItems(): List<HourlyForecastItems> {
         val newList = mutableListOf<HourlyForecastItems>()
 
-        newList.add(HourlyForecastItems.Title(Data.getCityLocation(requireContext()), OffsetDateTime.now()))
+        newList.add(
+            HourlyForecastItems.Title(
+                Data.getCityLocation(requireContext()),
+                OffsetDateTime.now()
+            )
+        )
 
         this?.forEach { hourly ->
             newList.add(
