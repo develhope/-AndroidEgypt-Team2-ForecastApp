@@ -5,7 +5,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import co.develhope.meteoapp.data.Data
 import co.develhope.meteoapp.data.domain.DailyDataLocal
@@ -15,20 +17,21 @@ import co.develhope.meteoapp.network.WeatherRepo
 import co.develhope.meteoapp.ui.search.adapter.DataSearches
 import co.develhope.meteoapp.ui.today.adapter.HourlyForecastItems
 import co.develhope.meteoapp.ui.today.adapter.TodayAdapter
+import co.develhope.meteoapp.ui.today.view_model.TodayScreenViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import org.threeten.bp.OffsetDateTime
 import org.threeten.bp.format.DateTimeFormatter
 
-
+@AndroidEntryPoint
 class TodayScreenFragment : Fragment() {
 
     private var _binding: FragmentTodayScreenBinding? = null
     private val binding get() = _binding!!
-    private val repo = WeatherRepo()
-
+    private val viewModel by viewModels<TodayScreenViewModel>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         _binding = FragmentTodayScreenBinding.inflate(inflater, container, false)
         return binding.root
@@ -65,6 +68,21 @@ class TodayScreenFragment : Fragment() {
         getDaily(latitude!!, longitude!!, currentDate, currentDate)
 
         setupAdapter()
+        collectFromStateFlow()
+    }
+
+    private fun collectFromStateFlow() {
+        lifecycleScope.launch {
+            viewModel.todayScreenState.collect {
+                if (it.dailyDataLocal != null) {
+                    (binding.todayRecyclerview.adapter as TodayAdapter).setNewList(it.dailyDataLocal.toHourlyForecastItems())
+                    Log.i("NETWORK DATA", "$it")
+                } else {
+                    Log.e("NETWORK ERROR", "Couldn't achieve network call. (Today Screen)")
+                }
+                binding.todayProgress.isVisible = it.isProgressbarVisible
+            }
+        }
     }
 
     private fun setupAdapter() {
@@ -75,21 +93,14 @@ class TodayScreenFragment : Fragment() {
         lat: Double,
         lon: Double,
         startDate: String,
-        endDate: String
+        endDate: String,
     ) {
-        binding.todayProgress.visibility = View.VISIBLE
-
-        lifecycleScope.launch {
-            val response = repo.getWeather(lat, lon, startDate, endDate)
-            if (response != null) {
-                binding.todayProgress.visibility = View.GONE
-//                _result.postValue(response)
-                (binding.todayRecyclerview.adapter as TodayAdapter).setNewList(response.toHourlyForecastItems())
-                Log.i("NETWORK DATA", "$response")
-            } else {
-                Log.e("NETWORK ERROR", "Couldn't achieve network call. (Today Screen)")
-            }
-        }
+        viewModel.fetchTodayWeather(
+            lat = lat,
+            lon = lon,
+            startDate = startDate,
+            endDate = endDate
+        )
     }
 
     //TODO: DA FINIRE
@@ -102,7 +113,12 @@ class TodayScreenFragment : Fragment() {
 
         val newList = mutableListOf<HourlyForecastItems>()
 
-        newList.add(HourlyForecastItems.Title(Data.getCityLocation(requireContext()), OffsetDateTime.now()))
+        newList.add(
+            HourlyForecastItems.Title(
+                Data.getCityLocation(requireContext()),
+                OffsetDateTime.now()
+            )
+        )
 
         filteredList?.forEach { hourly ->
             newList.add(
