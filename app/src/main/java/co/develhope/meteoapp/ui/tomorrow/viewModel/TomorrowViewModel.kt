@@ -14,6 +14,15 @@ class TomorrowViewModel() : ViewModel() {
     private val tomorrowWeatherRepo = WeatherRepo()
     private val _result: MutableLiveData<DailyDataLocal?> = MutableLiveData()
     var result: LiveData<DailyDataLocal?> = _result
+    private val _showProgress: MutableLiveData<Boolean> = MutableLiveData()
+    var showProgress: LiveData<Boolean> = _showProgress
+
+
+    fun isLoading(showProgress:Boolean) {
+        _showProgress.value = showProgress
+    }
+
+
     fun getDaily(
         lat: Double,
         lon: Double,

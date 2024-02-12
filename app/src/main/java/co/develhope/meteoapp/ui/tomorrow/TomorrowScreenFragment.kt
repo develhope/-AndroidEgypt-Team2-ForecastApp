@@ -1,10 +1,12 @@
 package co.develhope.meteoapp.ui.tomorrow
 
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import co.develhope.meteoapp.data.Data
@@ -62,7 +64,7 @@ class TomorrowScreenFragment : Fragment() {
 
         setupAdapter()
         setupObserver()
-
+        tomorrowViewModel.isLoading(true)
     }
 
     private fun setupAdapter() {
@@ -72,14 +74,14 @@ class TomorrowScreenFragment : Fragment() {
     private fun setupObserver() {
 
         tomorrowViewModel.result.observe(viewLifecycleOwner) {
+            tomorrowViewModel.isLoading(false)
             (binding.tomorrowRecyclerview.adapter as TomorrowAdapter).setNewList(it.toHourlyForecastItems())
+
+        }
+        tomorrowViewModel.showProgress.observe(viewLifecycleOwner) { showProgress ->
+            binding.tomorrowProgress.visibility = if (showProgress) View.VISIBLE else View.GONE
         }
     }
-//    private fun setupObserver() {
-//        dailyViewModel.isLoading.observe(viewLifecycleOwner){
-//            binding.tomorrowProgress.isVisible = it
-//        }
-
 
 
     private fun DailyDataLocal?.toHourlyForecastItems(): List<HourlyForecastItems> {
