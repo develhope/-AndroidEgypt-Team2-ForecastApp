@@ -13,6 +13,7 @@ import androidx.navigation.ui.setupWithNavController
 import co.develhope.meteoapp.R.id
 import co.develhope.meteoapp.data.Data
 import co.develhope.meteoapp.databinding.ActivityMainBinding
+import co.develhope.meteoapp.ui.tomorrow.viewModel.TomorrowViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import org.threeten.bp.OffsetDateTime
 
