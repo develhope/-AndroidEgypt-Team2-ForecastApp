@@ -7,37 +7,37 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.develhope.meteoapp.data.domain.DailyDataLocal
 import co.develhope.meteoapp.network.WeatherRepo
+import co.develhope.meteoapp.ui.util.DataState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 
 class TomorrowViewModel() : ViewModel() {
     private val tomorrowWeatherRepo = WeatherRepo()
-    private val _result: MutableLiveData<DailyDataLocal?> = MutableLiveData()
-    var result: LiveData<DailyDataLocal?> = _result
-    private val _showProgress: MutableLiveData<Boolean> = MutableLiveData()
-    var showProgress: LiveData<Boolean> = _showProgress
+    private val _result: MutableLiveData<DataState<DailyDataLocal>?> = MutableLiveData()
+    var result: LiveData<DataState<DailyDataLocal>?> = _result
 
 
-    fun isLoading(showProgress:Boolean) {
-        _showProgress.value = showProgress
-    }
-
-
-    fun getDaily(
+    fun getTomorrowWeather(
         lat: Double,
         lon: Double,
         startDate: String,
         endDate: String
     ) {
-        viewModelScope.launch(IO) {
-            val response = tomorrowWeatherRepo.getWeather(lat, lon, startDate, endDate)
-            if (response != null) {
-                _result.postValue(response)
-                Log.i("TAG", "getDaily: $response")
-            } else {
-                Log.e("TAG", "getDaily: Couldn't achieve network call. (Tomorrow Screen) ")
-            }
-        }
+        viewModelScope.launch {
 
+            _result.value = DataState.Loading(true)
+
+            val response = tomorrowWeatherRepo.getWeather(lat, lon, startDate, endDate)
+            try {
+                if (response != null) {
+                    _result.postValue(DataState.Success(response))
+                }
+            } catch (e: Exception) {
+                _result.value = DataState.Failure(e)
+            }
+
+        }
     }
+
 }
