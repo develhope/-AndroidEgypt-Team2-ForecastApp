@@ -15,8 +15,9 @@ import co.develhope.meteoapp.data.Data
 import co.develhope.meteoapp.databinding.ActivityMainBinding
 import co.develhope.meteoapp.ui.tomorrow.viewModel.TomorrowViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import dagger.hilt.android.AndroidEntryPoint
 import org.threeten.bp.OffsetDateTime
-
+@AndroidEntryPoint
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding

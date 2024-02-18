@@ -1,15 +1,12 @@
 package co.develhope.meteoapp.ui.tomorrow
 
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import co.develhope.meteoapp.data.Data
 import co.develhope.meteoapp.data.domain.DailyDataLocal
 import co.develhope.meteoapp.data.domain.HourlyForecast
@@ -19,10 +16,11 @@ import co.develhope.meteoapp.ui.today.adapter.HourlyForecastItems
 import co.develhope.meteoapp.ui.tomorrow.adapter.TomorrowAdapter
 import co.develhope.meteoapp.ui.tomorrow.viewModel.TomorrowViewModel
 import co.develhope.meteoapp.ui.util.DataState
-import kotlinx.coroutines.launch
+import dagger.hilt.android.AndroidEntryPoint
 import org.threeten.bp.OffsetDateTime
 import org.threeten.bp.format.DateTimeFormatter
 
+@AndroidEntryPoint
 
 class TomorrowScreenFragment : Fragment() {
     private var _binding: FragmentTomorrowScreenBinding? = null
