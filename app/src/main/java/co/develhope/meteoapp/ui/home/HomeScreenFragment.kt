@@ -1,27 +1,29 @@
 package co.develhope.meteoapp.ui.home
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import co.develhope.meteoapp.R
 import co.develhope.meteoapp.data.Data
 import co.develhope.meteoapp.data.domain.toWeekItems
 import co.develhope.meteoapp.databinding.FragmentHomeScreenBinding
-import co.develhope.meteoapp.network.WeatherRepo
 import co.develhope.meteoapp.ui.home.adapter.WeekAdapter
+import co.develhope.meteoapp.ui.home.view_model.HomeViewModel
 import co.develhope.meteoapp.ui.search.adapter.DataSearches
+import co.develhope.meteoapp.ui.util.DataState
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
-
+@AndroidEntryPoint
 class HomeScreenFragment : Fragment() {
     private var _binding: FragmentHomeScreenBinding? = null
     private val binding get() = _binding!!
-    private val repo = WeatherRepo()
+    private val homeViewModel: HomeViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -54,7 +56,8 @@ class HomeScreenFragment : Fragment() {
         if (dataSearches is DataSearches.ItemSearch) {
             latitude = dataSearches.latitude
         }
-        getWeekly(latitude!!, longitude!!)
+        homeViewModel.getWeekly(latitude!!, longitude!!)
+        setUpObserver()
         setupAdapter()
 
     }
@@ -65,17 +68,25 @@ class HomeScreenFragment : Fragment() {
 
     }
 
-    private fun getWeekly(lat: Double, lon: Double) {
-        binding.homeProgress.visibility = View.VISIBLE
-
+    private fun setUpObserver() {
+        homeViewModel.result.observe(viewLifecycleOwner) {
+            when (it) {
+                is DataState.Failure -> it.throwable.message
+                is DataState.Loading -> binding.homeProgress.visibility = View.VISIBLE
+                is DataState.Success -> {
+                    binding.homeProgress.visibility = View.GONE
+                    (binding.homeRecyclerView.adapter as WeekAdapter).setNewList(
+                        it.data.toWeekItems(
+                            requireContext()
+                        )
+                    )
+                }
+            }
+        }
         lifecycleScope.launch {
-            val response = repo.getHomeWeather(lat, lon)
-            if (response != null) {
-                _binding?.homeProgress?.visibility = View.GONE
-                (_binding?.homeRecyclerView?.adapter as? WeekAdapter)?.setNewList(response.toWeekItems(requireContext()))
-                Log.i("NETWORK DATA", "$response")
-            } else {
+            homeViewModel.navigationCommand.collect() {
                 findNavController().navigate(R.id.search_screen)
+
             }
         }
     }
