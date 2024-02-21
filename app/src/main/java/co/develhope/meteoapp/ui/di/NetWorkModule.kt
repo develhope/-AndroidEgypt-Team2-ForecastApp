@@ -1,6 +1,7 @@
 package co.develhope.meteoapp.ui.di
 
 import co.develhope.meteoapp.network.OffsetDateTimeTypeAdapter
+import co.develhope.meteoapp.network.SearchService
 import co.develhope.meteoapp.network.TryCatchInterceptor
 import co.develhope.meteoapp.network.WeatherService
 import com.google.gson.Gson
@@ -14,6 +15,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.threeten.bp.OffsetDateTime
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.create
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -38,7 +40,7 @@ object NetWorkModule {
             .build()
 
     }
-
+    @WeatherRetrofit
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
@@ -49,10 +51,25 @@ object NetWorkModule {
             .build()
 
     }
+    @SearchRetrofit
+    @Provides
+    @Singleton
+    fun provideSearchRetrofit(okHttpClient: OkHttpClient) :Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://geocoding-api.open-meteo.com/")
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .client(okHttpClient)
+            .build()
+    }
 
     @Provides
     @Singleton
-    fun provideApiService(retrofit: Retrofit): WeatherService {
+    fun provideApiService(@WeatherRetrofit retrofit: Retrofit): WeatherService {
         return retrofit.create(WeatherService::class.java)
+    }
+    @Provides
+    @Singleton
+    fun provideSearchApiService(@SearchRetrofit retrofit: Retrofit): SearchService {
+        return retrofit.create(SearchService::class.java)
     }
 }

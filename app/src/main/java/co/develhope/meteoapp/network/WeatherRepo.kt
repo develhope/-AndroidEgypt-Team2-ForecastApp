@@ -13,6 +13,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 class WeatherRepo @Inject constructor(private val service: WeatherService) {
 

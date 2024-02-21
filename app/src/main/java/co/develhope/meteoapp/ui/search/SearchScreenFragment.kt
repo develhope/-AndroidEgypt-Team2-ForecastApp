@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import co.develhope.meteoapp.R
@@ -26,18 +27,22 @@ import co.develhope.meteoapp.network.SearchRepo
 import co.develhope.meteoapp.ui.MainActivity
 import co.develhope.meteoapp.ui.search.adapter.DataSearchAdapter
 import co.develhope.meteoapp.ui.search.adapter.DataSearches
+import co.develhope.meteoapp.ui.search.view_model.SearchViewModel
+import co.develhope.meteoapp.ui.util.DataState
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-
+@AndroidEntryPoint
 class SearchScreenFragment : Fragment() {
 
     private var _binding: FragmentSearchScreenBinding? = null
     private val binding get() = _binding!!
     private var fusedLocationClient: FusedLocationProviderClient? = null
-    private var repo = SearchRepo()
+    private val searchViewModel: SearchViewModel by viewModels()
 
     @SuppressLint("MissingPermission")
     val requestPermissionLauncher =
@@ -112,7 +117,7 @@ class SearchScreenFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentSearchScreenBinding.inflate(inflater, container, false)
         return binding.root
@@ -136,8 +141,7 @@ class SearchScreenFragment : Fragment() {
             }
         )
 
-//        observerSearch()
-
+        observerSearch()
         binding.xIconClick.setOnClickListener {
             clearAutoCompleteTextView()
             Log.d("X ICON CLICKED", "CLICK CLICK CLICK !")
@@ -153,7 +157,7 @@ class SearchScreenFragment : Fragment() {
                     s: CharSequence,
                     start: Int,
                     count: Int,
-                    after: Int
+                    after: Int,
                 ) {
                 }
 
@@ -169,9 +173,7 @@ class SearchScreenFragment : Fragment() {
                         )
                     } else {
                         binding.xIconClick.visibility = View.VISIBLE
-
-//                        searchViewModel.getPlaces(s.toString())
-                        getPlaces(s.toString())
+                        searchViewModel.getPlaces(s.toString())
                     }
                 }
             })
@@ -207,25 +209,21 @@ class SearchScreenFragment : Fragment() {
         (binding.searchRecyclerView.adapter as? DataSearchAdapter)?.setNewList(emptyList())
     }
 
-    fun getPlaces(place: String) {
-//        Log.d("GET PLACES", place)
+    private fun observerSearch() {
         lifecycleScope.launch {
-            val response = repo.getSearch(place)
-            if (response != null) {
-//                _cityHints.postValue(response)
-                response.toDataSearches().let { newList ->
-                    (binding.searchRecyclerView.adapter as? DataSearchAdapter)
-                        ?.setNewList(newList)
+            searchViewModel.state
+                .collect { response ->
+                    when (response) {
+                        is DataState.Failure -> Unit
+                        is DataState.Loading -> Unit
+                        is DataState.Success -> {
+                            response.data.toDataSearches().let { newList ->
+                                (binding.searchRecyclerView.adapter as? DataSearchAdapter)
+                                    ?.setNewList(newList)
+                            }
+                        }
+                    }
                 }
-                response.forEach {
-                    Log.d(
-                        "DATA",
-                        "${it.admin1},${it.name}, ${it.latitude}, ${it.longitude} "
-                    )
-                }
-            } else {
-                Log.e("ERROR", "network error ")
-            }
         }
     }
 
